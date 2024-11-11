@@ -3,40 +3,35 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main # Atur sesuai dengan nama branch yang Anda gunakan
+      - main # Jalankan aksi ini ketika ada perubahan di branch main
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Menggunakan runner ubuntu
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout code from GitHub
+        uses: actions/checkout@v3 # Mengambil kode dari repository GitHub
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.5.3 # Setup SSH Agent untuk menggunakan private key
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add GitHub SSH Key to known hosts
-        run: |
-          # Menambahkan host key GitHub untuk memastikan tidak ada error saat SSH
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} # Menggunakan SSH key yang disimpan di GitHub Secrets
 
       - name: SSH to EC2 and deploy
-  run: |
-    # Memastikan koneksi SSH tidak meminta verifikasi
-    ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@$TARGET_SERVER << 'EOF'
-      # Masuk ke direktori aplikasi
-      cd $TARGET_DIRECTORY
-      echo "Menarik perubahan terbaru dari GitHub..."
-      git remote set-url origin git@github.com:kevinvinn/coba.git  # Gunakan SSH untuk mengakses GitHub
-      git pull origin main || { echo "Git pull gagal"; exit 1; }  # Pastikan git pull berhasil
-      echo "Instalasi dependensi..."
-      npm install  # Install dependencies baru jika ada
-      echo "Menjalankan PM2..."
-      pm2 restart my-app  # Restart aplikasi dengan PM2
-    EOF
+        run: |
+          # Pastikan tidak ada masalah verifikasi host
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@$TARGET_SERVER << 'EOF'
+            # Arahkan ke direktori aplikasi
+            cd $TARGET_DIRECTORY || { echo "Gagal pindah ke direktori aplikasi"; exit 1; }
 
+            # Lakukan git pull untuk menarik pembaruan terbaru
+            git remote set-url origin git@github.com:kevinvinn/coba.git  # Pastikan menggunakan SSH untuk GitHub
+            git pull origin main || { echo "Git pull gagal"; exit 1; }
 
-      - name: Clean up SSH agent
-        run: ssh-agent -k
+            # Install dependencies jika ada perubahan
+            npm install || { echo "npm install gagal"; exit 1; }
+
+            # Restart aplikasi dengan PM2
+            pm2 restart my-app || { echo "Gagal restart PM2"; exit 1; }
+          EOF
