@@ -22,9 +22,14 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Add EC2 host to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.HOST_DNS }} >> ~/.ssh/known_hosts
+
       - name: Deploy to Server 1
         run: |
-          sudo rsync -avz --delete ./ ${USERNAME}@${HOST_DNS}:/home/ubuntu/coba
+          sudo rsync -avz --delete ./ ${USERNAME}@${HOST_DNS}:${TARGET_DIR}
         env:
           USERNAME: ${{ secrets.USERNAME }}
           HOST_DNS: ${{ secrets.HOST_DNS }}
