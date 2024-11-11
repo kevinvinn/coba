@@ -1,32 +1,41 @@
-name: Deploy to AWS Server
+name: Deploy to EC2
 
 on:
   push:
     branches:
-      - main # Workflow berjalan saat ada perubahan di branch `main`
+      - main # Atur sesuai dengan nama branch yang Anda gunakan
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to server
-        env:
-          TARGET_SERVER: "ubuntu@54.169.122.92" # Ganti dengan alamat server atau DNS publik
-          TARGET_DIRECTORY: "/home/ubuntu/coba" # Direktori tempat aplikasi Anda di server
+      - name: Add GitHub SSH Key to known hosts
         run: |
+          # Menambahkan host key GitHub untuk memastikan tidak ada error saat SSH
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: SSH to EC2 and deploy
+        run: |
+          # Memastikan koneksi SSH tidak meminta verifikasi
           ssh -o StrictHostKeyChecking=no $TARGET_SERVER << 'EOF'
+            # Masuk ke direktori aplikasi
             cd $TARGET_DIRECTORY
+            echo "Menarik perubahan terbaru dari GitHub..."
             git remote set-url origin git@github.com:kevinvinn/coba.git  # Gunakan SSH untuk mengakses GitHub
-            git pull origin main  # Menarik perubahan terbaru dari repository
+            git pull origin main || { echo "Git pull gagal"; exit 1; }  # Pastikan git pull berhasil
+            echo "Instalasi dependensi..."
             npm install  # Install dependencies baru jika ada
-            pm2 start app.js --name "my-app" || pm2 restart all  # Menjalankan aplikasi menggunakan PM2 atau restart jika sudah berjalan
+            echo "Menjalankan PM2..."
+            pm2 restart my-app  # Restart aplikasi dengan PM2
           EOF
+
+      - name: Clean up SSH agent
+        run: ssh-agent -k
