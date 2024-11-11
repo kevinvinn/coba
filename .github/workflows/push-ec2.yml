@@ -1,5 +1,6 @@
 name: Push-to-EC2
 
+# Trigger deployment only on push to main branch
 on:
   push:
     branches:
@@ -7,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2 on main branch push
+    name: Deploy to EC2 on master branch push
     runs-on: ubuntu-latest
 
     steps:
@@ -22,16 +23,10 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Add EC2 host to known hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.HOST_DNS }} >> ~/.ssh/known_hosts
-
       - name: Deploy to Server 1
-        run: |
-          sudo rsync -avz --delete ./ ${USERNAME}@${HOST_DNS}:${TARGET_DIR}
+        uses: easingthemes/ssh-deploy@main
         env:
-          USERNAME: ${{ secrets.USERNAME }}
-          HOST_DNS: ${{ secrets.HOST_DNS }}
-          TARGET_DIR: ${{ secrets.TARGET_DIR }}
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          TARGET: ${{ secrets.TARGET_DIR }}
