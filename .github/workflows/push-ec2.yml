@@ -23,19 +23,20 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: SSH to EC2 and deploy
-        run: |
-          # Memastikan koneksi SSH tidak meminta verifikasi
-          ssh -o StrictHostKeyChecking=no $TARGET_SERVER << 'EOF'
-            # Masuk ke direktori aplikasi
-            cd $TARGET_DIRECTORY
-            echo "Menarik perubahan terbaru dari GitHub..."
-            git remote set-url origin git@github.com:kevinvinn/coba.git  # Gunakan SSH untuk mengakses GitHub
-            git pull origin main || { echo "Git pull gagal"; exit 1; }  # Pastikan git pull berhasil
-            echo "Instalasi dependensi..."
-            npm install  # Install dependencies baru jika ada
-            echo "Menjalankan PM2..."
-            pm2 restart my-app  # Restart aplikasi dengan PM2
-          EOF
+  run: |
+    # Memastikan koneksi SSH tidak meminta verifikasi
+    ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ubuntu@$TARGET_SERVER << 'EOF'
+      # Masuk ke direktori aplikasi
+      cd $TARGET_DIRECTORY
+      echo "Menarik perubahan terbaru dari GitHub..."
+      git remote set-url origin git@github.com:kevinvinn/coba.git  # Gunakan SSH untuk mengakses GitHub
+      git pull origin main || { echo "Git pull gagal"; exit 1; }  # Pastikan git pull berhasil
+      echo "Instalasi dependensi..."
+      npm install  # Install dependencies baru jika ada
+      echo "Menjalankan PM2..."
+      pm2 restart my-app  # Restart aplikasi dengan PM2
+    EOF
+
 
       - name: Clean up SSH agent
         run: ssh-agent -k
