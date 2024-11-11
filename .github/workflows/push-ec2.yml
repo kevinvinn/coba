@@ -1,6 +1,5 @@
 name: Push-to-EC2
 
-# Trigger deployment only on push to main branch
 on:
   push:
     branches:
@@ -23,13 +22,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # Build your project (assuming you're using something like Webpack, or any other build tool)
-      - name: Build the project
-        run: npm run build # Sesuaikan dengan script build proyek Anda
-
       - name: Deploy to Server 1
         run: |
-          sudo rsync -avz --delete ./dist/ ${USERNAME}@${HOST_DNS}:/home/ubuntu/coba
+          sudo rsync -avz --delete ./ ${USERNAME}@${HOST_DNS}:/home/ubuntu/coba
         env:
           USERNAME: ${{ secrets.USERNAME }}
           HOST_DNS: ${{ secrets.HOST_DNS }}
