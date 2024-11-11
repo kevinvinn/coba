@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to EC2 on master branch push
+    name: Deploy to EC2 on main branch push
     runs-on: ubuntu-latest
 
     steps:
@@ -23,10 +23,15 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      # Build your project (assuming you're using something like Webpack, or any other build tool)
+      - name: Build the project
+        run: npm run build # Sesuaikan dengan script build proyek Anda
+
       - name: Deploy to Server 1
-        uses: easingthemes/ssh-deploy@main
+        run: |
+          sudo rsync -avz --delete ./dist/ ${USERNAME}@${HOST_DNS}:/home/ubuntu/coba
         env:
+          USERNAME: ${{ secrets.USERNAME }}
+          HOST_DNS: ${{ secrets.HOST_DNS }}
+          TARGET_DIR: ${{ secrets.TARGET_DIR }}
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.HOST_DNS }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
-          TARGET: ${{ secrets.TARGET_DIR }}
