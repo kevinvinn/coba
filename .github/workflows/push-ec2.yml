@@ -18,17 +18,20 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} # Menggunakan kunci SSH yang disimpan di GitHub Secrets
 
+      - name: Verify and add EC2 server SSH key
+        run: |
+          mkdir -p ~/.ssh
+          # Menambahkan host ke known_hosts dengan ssh-keyscan
+          ssh-keyscan -H ${{ secrets.TARGET_SERVER }} >> ~/.ssh/known_hosts
+          # Memastikan permissions yang benar untuk known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
       - name: SSH to EC2 and deploy
         run: |
-          # Verifikasi dan pastikan SSH tidak meminta interaksi user saat pertama kali
-          mkdir -p ~/.ssh
-          touch ~/.ssh/known_hosts
-          ssh-keyscan -H $TARGET_SERVER >> ~/.ssh/known_hosts  # Menghindari masalah host key verification
-
           # SSH ke server dan jalankan perintah deploy
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$TARGET_SERVER << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.TARGET_SERVER }} << 'EOF'
             # Pindah ke direktori aplikasi
-            cd $TARGET_DIRECTORY || { echo "Gagal pindah ke direktori aplikasi"; exit 1; }
+            cd ${{ secrets.TARGET_DIRECTORY }} || { echo "Gagal pindah ke direktori aplikasi"; exit 1; }
 
             # Lakukan git pull untuk menarik pembaruan terbaru
             git remote set-url origin git@github.com:kevinvinn/coba.git  # Pastikan menggunakan SSH untuk GitHub
