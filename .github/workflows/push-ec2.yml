@@ -20,11 +20,12 @@ jobs:
 
       - name: Deploy to server
         env:
-          TARGET_SERVER: "ubuntu@ec2-54-169-122-92.ap-southeast-1.compute.amazonaws.com" # atau gunakan DNS publik server Anda
+          TARGET_SERVER: "ubuntu@54.169.122.92" # atau gunakan DNS publik server Anda
           TARGET_DIRECTORY: "/home/ubuntu/coba" # Direktori tempat aplikasi Anda berada di server
         run: |
           ssh -o StrictHostKeyChecking=no $TARGET_SERVER << 'EOF'
             cd $TARGET_DIRECTORY
+git remote set-url origin git@github.com:kevinvinn/coba.git  # Gunakan SSH untuk mengakses GitHub
             git pull origin main
             npm install  # Install dependencies baru jika ada
             pm2 restart all  # Restart aplikasi yang dikelola oleh PM2
