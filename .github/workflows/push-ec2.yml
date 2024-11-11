@@ -1,32 +1,31 @@
-name: Push-to-EC2
+name: Deploy to AWS Server
 
-# Trigger deployment only on push to main branch
 on:
   push:
     branches:
-      - main
+      - main # Workflow berjalan saat ada perubahan di branch `main`
 
 jobs:
   deploy:
-    name: Deploy to EC2 on master branch push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the files
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          node-version: '16'
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Deploy to Server 1
-        uses: easingthemes/ssh-deploy@main
+      - name: Deploy to server
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.HOST_DNS }}
-          REMOTE_USER: ${{ secrets.USERNAME }}
-          TARGET: ${{ secrets.TARGET_DIR }}
+          TARGET_SERVER: "ubuntu@ec2-54-169-122-92.ap-southeast-1.compute.amazonaws.com" # atau gunakan DNS publik server Anda
+          TARGET_DIRECTORY: "/home/ubuntu/coba" # Direktori tempat aplikasi Anda berada di server
+        run: |
+          ssh -o StrictHostKeyChecking=no $TARGET_SERVER << 'EOF'
+            cd $TARGET_DIRECTORY
+            git pull origin main
+            npm install  # Install dependencies baru jika ada
+            pm2 restart all  # Restart aplikasi yang dikelola oleh PM2
+          EOF
