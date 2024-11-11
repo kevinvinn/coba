@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/", routes);
 
 app.get("/", (req, res) => {
-  res.send("aku di sini cuy ahay 4");
+  res.send("aku di sini cuy ahay 5");
 });
 
 app.listen(PORT, () => {
