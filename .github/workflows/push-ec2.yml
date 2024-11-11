@@ -1,45 +1,32 @@
-name: Deploy to EC2
+name: Push-to-EC2
 
+# Trigger deployment only on push to main branch
 on:
   push:
     branches:
-      - main # Jalankan aksi ini saat ada push ke branch main
+      - main
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # Menggunakan runner Ubuntu
+    name: Deploy to EC2 on master branch push
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code from GitHub
-        uses: actions/checkout@v3 # Checkout kode dari repository GitHub
+      - name: Checkout the files
+        uses: actions/checkout@v2
 
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.5.3 # Menggunakan SSH agent untuk menggunakan private key
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} # Menggunakan kunci SSH yang disimpan di GitHub Secrets
+          node-version: '16'
 
-      - name: Verify and add EC2 server SSH key
-        run: |
-          mkdir -p ~/.ssh
-          # Menambahkan host ke known_hosts dengan ssh-keyscan
-          ssh-keyscan -H ${{ secrets.TARGET_SERVER }} >> ~/.ssh/known_hosts
-          # Memastikan permissions yang benar untuk known_hosts
-          chmod 644 ~/.ssh/known_hosts
+      - name: Install Dependencies
+        run: npm install
 
-      - name: SSH to EC2 and deploy
-        run: |
-          # SSH ke server dan jalankan perintah deploy
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.TARGET_SERVER }} << 'EOF'
-            # Pindah ke direktori aplikasi
-            cd ${{ secrets.TARGET_DIRECTORY }} || { echo "Gagal pindah ke direktori aplikasi"; exit 1; }
-
-            # Lakukan git pull untuk menarik pembaruan terbaru
-            git remote set-url origin git@github.com:kevinvinn/coba.git  # Pastikan menggunakan SSH untuk GitHub
-            git pull origin main || { echo "Git pull gagal"; exit 1; }
-
-            # Install dependensi jika ada perubahan
-            npm install || { echo "npm install gagal"; exit 1; }
-
-            # Restart aplikasi menggunakan PM2
-            pm2 restart my-app || { echo "Gagal restart PM2"; exit 1; }
-          EOF
+      - name: Deploy to Server 1
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOST_DNS }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          TARGET: ${{ secrets.TARGET_DIR }}
